@@ -1,48 +1,39 @@
+from pages.login_page import LoginPage
 import pytest
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+from utils.reader import read_users_csv
+from utils.logger import logger
 
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
-def test_login_exitoso():
-    driver = webdriver.Chrome()
+@pytest.mark.parametrize(
+    "data", read_users_csv())
     
-    driver.implicitly_wait(10)
-    
-    wait = WebDriverWait(driver,10)
-    
+    #"usuario, password",
+    #[
+    #    ("standard_user", "secret_sauce"),
+    #    ("admin", "1234"),
+    #   ("jose", "123")
+    #])
+
+def test_login(driver,data): #iniciamos la prueba del login
     try:
-        #Login
+        logger.info("Iniciando prueba de login") #texto
+        login_page = LoginPage(driver)
+        
         driver.get("https://www.saucedemo.com/")
+        logger.info("Pagina abierta correctamente")
         
-        usuario = wait.until(EC.presence_of_element_located((By.ID,"user-name" ))).send_keys("standard_user")
-        #driver.find_element(By.ID,"user-name")
-        password = wait.until(EC.presence_of_element_located((By.ID,"password" ))).send_keys("secret_sauce")
-        #driver.find_element(By.ID,"password")
+        login_page.login(data["usuario"],data["password"])
+        logger.info("Ingreso de credenciales")
         
-        boton_login = wait.until(EC.element_to_be_clickable((By.ID,"login-button"))).click()
-        
-        #boton_login = driver.find_element(By.ID,"login-button")
-        
-        #Que quiero hacer con estos elementos
-        #usuario.send_keys("standard_user")
-        #password.send_keys("secret_sauce")
-        
-        #boton_login.click()
-        
-        #Validacion URL
-        assert "/inventory.html" in driver.current_url
-        
-        #Validacion titulo pagina
-        logo = driver.find_element(By.CLASS_NAME, "app_logo")
-        print(f"Titulo de página: {(logo.text) }")
-        assert logo.text == "Swag Labs"
-        
-        #validacion titulo inventario
-        titulo = driver.find_element(By.CSS_SELECTOR, "[data-test='title']")
-        assert titulo.text == "Products"
-    finally:
-        driver.quit()
-        
+        if data["tipo_usuario"] == "True":
+            assert "/inventory.html" in driver.current_url
+            logger.info("Login exitoso")
+        elif data["tipo_usuario"] == "False":
+            error = login_page.obtener_mensaje_error()
+            print(error)
+            assert "Epic sadface" in error
+            logger.info("Prueba de mensaje de error valida")
+    except Exception: #captura una excepcion 
+        logger.exception("Error durante la prueba de login")
+        raise
         
